@@ -196,3 +196,7 @@ SELECT
 FROM today t FULL OUTER JOIN yesterday y
 	ON t.player_name = y.player_name
 SELECT * FROM players WHERE current_season = 2001
+-- See specific player, this table is flattened out
+SELECT * FROM players 
+WHERE current_season = 2001
+AND player_name = 'Michael Jordan'
