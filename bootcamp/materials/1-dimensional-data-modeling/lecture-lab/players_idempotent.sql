@@ -298,8 +298,11 @@ FROM today t FULL OUTER JOIN yesterday y
 SELECT * FROM players WHERE current_season = 2001
 -- Analytics to see which player improved the most from 1st to their most recent season
 SELECT
-	player_name,
-	(season_stats[1]::season_stats).pts AS first_season,
-	(season_stats[CARDINALITY(season_stats)]::season_stats).pts as latest_season
+    player_name,
+    (season_stats[CARDINALITY(season_stats)]::season_stats).pts /
+    CASE 
+        WHEN (season_stats[1]::season_stats).pts = 0 THEN 1
+        ELSE (season_stats[1]::season_stats).pts
+    END AS pts_improvement_ratio
 FROM players
-WHERE current_season = 2001
+WHERE current_season = 2001;
