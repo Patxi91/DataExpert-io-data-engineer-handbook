@@ -156,15 +156,15 @@ SELECT
 	COALESCE(t.season, y.current_season + 1) as current_season
 FROM today t FULL OUTER JOIN yesterday y
 	ON t.player_name = y.player_name
--- Load Year by Year 1998
+-- Load Year by Year 1999
 INSERT INTO players
 WITH yesterday AS(
 	SELECT * FROM players
-	WHERE current_season = 1998 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
+	WHERE current_season = 1999 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
 ),
 	today AS (
 		SELECT * FROM public.player_seasons
-		WHERE season = 1999
+		WHERE season = 2000
 	)
 SELECT 
     COALESCE(t.player_name, y.player_name) AS player_name,
@@ -195,4 +195,4 @@ SELECT
 	COALESCE(t.season, y.current_season + 1) as current_season
 FROM today t FULL OUTER JOIN yesterday y
 	ON t.player_name = y.player_name
-SELECT * FROM players WHERE current_season = 1999
+SELECT * FROM players WHERE current_season = 2000
