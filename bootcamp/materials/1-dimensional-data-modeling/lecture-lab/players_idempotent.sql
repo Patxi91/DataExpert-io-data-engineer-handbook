@@ -305,4 +305,5 @@ SELECT
         ELSE (season_stats[1]::season_stats).pts
     END AS pts_improvement_ratio
 FROM players
-WHERE current_season = 2001;
+WHERE current_season = 2001
+ORDER BY 2 DESC;
