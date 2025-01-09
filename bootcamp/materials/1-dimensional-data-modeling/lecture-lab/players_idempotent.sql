@@ -200,3 +200,18 @@ SELECT * FROM players WHERE current_season = 2001
 SELECT * FROM players 
 WHERE current_season = 2001
 AND player_name = 'Michael Jordan'
+-- See specific player, now we easily convert it to the specific player's player_seasons
+SELECT * FROM players
+WHERE current_season = 2001
+AND player_name = 'Michael Jordan'
+-- See specific player, now we easily convert it to the specific player's player_seasons exploding into columns
+WITH unnested AS (
+	SELECT player_name,
+		UNNEST(season_stats)::season_stats AS season_stats
+		FROM players
+	WHERE current_season = 2001
+	AND player_name = 'Michael Jordan'
+)
+SELECT player_name,
+	(season_stats::season_stats).*
+FROM unnested
