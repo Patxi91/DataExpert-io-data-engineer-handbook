@@ -157,7 +157,6 @@ SELECT
 FROM today t FULL OUTER JOIN yesterday y
 	ON t.player_name = y.player_name
 -- Load Year by Year
-DELETE FROM players; -- Idempotent
 INSERT INTO players
 WITH yesterday AS(
 	SELECT * FROM players
