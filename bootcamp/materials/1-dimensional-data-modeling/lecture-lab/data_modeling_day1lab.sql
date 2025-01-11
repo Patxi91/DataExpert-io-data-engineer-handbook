@@ -1,3 +1,6 @@
+-----------------------------
+--  Proceeding from LAB 1  --
+-----------------------------
 -- Check and create the type season_stats if it doesn't exist
 DO $$
 BEGIN
@@ -11,7 +14,6 @@ BEGIN
         );
     END IF;
 END $$;
-
 -- Check and create the type scoring_class if it doesn't exist
 DO $$
 BEGIN
@@ -20,290 +22,103 @@ BEGIN
     END IF;
 END $$;
 
--- Create the table players if it doesn't exist
 CREATE TABLE IF NOT EXISTS players (
-    player_name TEXT,
-    height TEXT,
-    college TEXT,
-    country TEXT,
-    draft_year TEXT,
-    draft_round TEXT,
-    draft_number TEXT,
-    season_stats season_stats[],
-    current_season INTEGER,
-    PRIMARY KEY (player_name, current_season)
-);
-
--- Cumulative Table between Today and Yesterday
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 1995 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
+     player_name TEXT,
+     height TEXT,
+     college TEXT,
+     country TEXT,
+     draft_year TEXT,
+     draft_round TEXT,
+     draft_number TEXT,
+     season_stats season_stats[],
+     scoring_class scoring_class,
+     years_since_last_active INTEGER,
+     current_season INTEGER,
+	 is_active BOOLEAN,
+     PRIMARY KEY (player_name, current_season)
+ );
+-- select * from players 
+insert into players 
+with years as (
+	select *
+	from generate_series(1996, 2022) as season
 ),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 1996
-	)
-SELECT * FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
--- Now COALESCE values that are not temporal, values that are not changing
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 1995 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
+p as (
+	select player_name , MIN(season) as first_season 
+	from player_seasons 
+	group by player_name 
 ),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 1996
-	)
-SELECT 
-    COALESCE(t.player_name, y.player_name) AS player_name,
-    COALESCE(t.height, y.height) AS height,
-    COALESCE(t.college, y.college) AS college,
-    COALESCE(t.draft_year, y.draft_year) AS draft_year,
-    COALESCE(t.draft_round, y.draft_round) AS draft_round,
-    COALESCE(t.draft_number, y.draft_number) AS draft_number,
-	CASE WHEN y.season_stats IS NULL
-		THEN ARRAY[ROW(
-						t.season,
-						t.gp,
-						t.pts,
-						t.ast,
-						t.reb
-						)::season_stats]
-	ELSE y.season_stats || ARRAY[ROW(
-						t.season,
-						t.gp,
-						t.pts,
-						t.ast,
-						t.reb
-						)::season_stats]
-	END
-FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
--- Now avoid todays Null values (player retires)
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 1995 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
+players_and_seasons as (
+	select * 
+	from p
+	join years y 
+	on p.first_season <= y.season
 ),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 1996
-	)
-SELECT 
-    COALESCE(t.player_name, y.player_name) AS player_name,
-    COALESCE(t.height, y.height) AS height,
-    COALESCE(t.college, y.college) AS college,
-    COALESCE(t.draft_year, y.draft_year) AS draft_year,
-    COALESCE(t.draft_round, y.draft_round) AS draft_round,
-    COALESCE(t.draft_number, y.draft_number) AS draft_number,
-	CASE 
-		WHEN y.season_stats IS NULL -- Create initial array w/ 1 value if null
-			THEN ARRAY[ROW(
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-		WHEN t.season IS NOT NULL THEN y.season_stats || ARRAY[ROW( -- Create new value if Today not null
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-	ELSE y.season_stats -- Carry history forward otherwise (retired player)
-	END as season_stats,
-	COALESCE(t.season, y.current_season + 1) as current_season
-FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
--- Turn the previous command into a little pipeline
-DELETE FROM players; -- Idempotent
-INSERT INTO players
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 1995 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
-),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 1996
-	)
-SELECT 
-    COALESCE(t.player_name, y.player_name) AS player_name,
-    COALESCE(t.height, y.height) AS height,
-    COALESCE(t.college, y.college) AS college,
-	COALESCE(t.country, y.country) AS country,
-    COALESCE(t.draft_year, y.draft_year) AS draft_year,
-    COALESCE(t.draft_round, y.draft_round) AS draft_round,
-    COALESCE(t.draft_number, y.draft_number) AS draft_number,
-	CASE 
-		WHEN y.season_stats IS NULL -- Create initial array w/ 1 value if null
-			THEN ARRAY[ROW(
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-		WHEN t.season IS NOT NULL THEN y.season_stats || ARRAY[ROW( -- Create new value if Today not null
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-	ELSE y.season_stats -- Carry history forward otherwise (retired player)
-	END as season_stats,
-	COALESCE(t.season, y.current_season + 1) as current_season
-FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
--- Load Year by Year 2000-2001
-INSERT INTO players
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 2000 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
-),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 2001
-	)
-SELECT 
-    COALESCE(t.player_name, y.player_name) AS player_name,
-    COALESCE(t.height, y.height) AS height,
-    COALESCE(t.college, y.college) AS college,
-	COALESCE(t.country, y.country) AS country,
-    COALESCE(t.draft_year, y.draft_year) AS draft_year,
-    COALESCE(t.draft_round, y.draft_round) AS draft_round,
-    COALESCE(t.draft_number, y.draft_number) AS draft_number,
-	CASE 
-		WHEN y.season_stats IS NULL -- Create initial array w/ 1 value if null
-			THEN ARRAY[ROW(
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-		WHEN t.season IS NOT NULL THEN y.season_stats || ARRAY[ROW( -- Create new value if Today not null
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-	ELSE y.season_stats -- Carry history forward otherwise (retired player)
-	END as season_stats,
-	COALESCE(t.season, y.current_season + 1) as current_season
-FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
-SELECT * FROM players WHERE current_season = 2001
--- See specific player, this table is flattened out
-SELECT * FROM players 
-WHERE current_season = 2001
-AND player_name = 'Michael Jordan'
--- See specific player, now we easily convert it to the specific player's player_seasons
-SELECT * FROM players
-WHERE current_season = 2001
-AND player_name = 'Michael Jordan'
--- See specific player, now we easily convert it to the specific player's player_seasons exploding into columns
-WITH unnested AS (
-	SELECT player_name,
-		UNNEST(season_stats)::season_stats AS season_stats
-		FROM players
-	WHERE current_season = 2001
-	AND player_name = 'Michael Jordan'
+windowed as (
+	select 
+	ps.player_name, ps.season,
+	array_remove(
+	array_agg(case 
+		when p1.season is not null then 
+		cast(row(p1.season, p1.gp, p1.pts, p1.reb, p1.ast) as season_stats)
+		end
+		)
+	over (partition by ps.player_name order by coalesce(p1.season, ps.season)) 
+	,null
+) 
+as seasons
+	from players_and_seasons ps
+	left join player_seasons p1
+	on ps.player_name = p1.player_name and ps.season = p1.season
+	order by ps.player_name, ps.season
 )
-SELECT player_name,
-	(season_stats::season_stats).*
-FROM unnested
-
--- Delete
-DROP TABLE players;
-
--- Add Scoring class column, based on the pts columns (cumulative)
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_type WHERE typname = 'scoring_class'
-    ) THEN
-        CREATE TYPE scoring_class AS ENUM ('bad', 'average', 'good', 'star');
-    END IF;
-END $$;
-
-CREATE TABLE IF NOT EXISTS players (
-    player_name TEXT,
-    height TEXT,
-    college TEXT,
-    country TEXT,
-    draft_year TEXT,
-    draft_round TEXT,
-    draft_number TEXT,
-    season_stats season_stats[],
-	scoring_class scoring_class,
-	years_since_last_season INTEGER,
-    current_season INTEGER,
-    PRIMARY KEY (player_name, current_season)
-);
-
-INSERT INTO players
-WITH yesterday AS(
-	SELECT * FROM players
-	WHERE current_season = 2000 -- Since SELECT MIN(season) FROM public.player_seasons = 1996
-),
-	today AS (
-		SELECT * FROM public.player_seasons
-		WHERE season = 2001
+,static as ( 
+	select player_name,
+	max(height) as height,
+	max(college) as college,
+	max(country) as country,
+	max(draft_year) as draft_year,
+	max(draft_round) as draft_round,
+	max(draft_number) as draft_number
+	from player_seasons ps 
+	group by player_name
 	)
-SELECT 
-    COALESCE(t.player_name, y.player_name) AS player_name,
-    COALESCE(t.height, y.height) AS height,
-    COALESCE(t.college, y.college) AS college,
-	COALESCE(t.country, y.country) AS country,
-    COALESCE(t.draft_year, y.draft_year) AS draft_year,
-    COALESCE(t.draft_round, y.draft_round) AS draft_round,
-    COALESCE(t.draft_number, y.draft_number) AS draft_number,
-	CASE 
-		WHEN y.season_stats IS NULL -- Create initial array w/ 1 value if null
-			THEN ARRAY[ROW(
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-		WHEN t.season IS NOT NULL THEN y.season_stats || ARRAY[ROW( -- Create new value if Today not null
-							t.season,
-							t.gp,
-							t.pts,
-							t.ast,
-							t.reb
-							)::season_stats]
-	ELSE y.season_stats -- Carry history forward otherwise (retired player)
-	END as season_stats,
-	CASE 
-		WHEN t.season IS NOT NULL THEN -- active this season
-		CASE WHEN t.pts > 20 THEN 'star'
-			WHEN t.pts > 15 THEN 'good'
-			WHEN t.pts > 10 THEN 'average'
-			ELSE 'bad'
-		END::scoring_class
-	END as scoring_class,
-	CASE 
-		WHEN t.season IS NOT NULL THEN 0 -- active this season (also when they come back)
-	ELSE
-		y.years_since_last_season + 1 -- otherwise it's been 1 year since they played (incrementing)
-	END as years_since_last_season,
-	COALESCE(t.season, y.current_season + 1) as current_season
-FROM today t FULL OUTER JOIN yesterday y
-	ON t.player_name = y.player_name
-SELECT * FROM players WHERE current_season = 2001
--- Analytics to see which player improved the most from 1st to their most recent season
-SELECT
-    player_name,
-    (season_stats[CARDINALITY(season_stats)]::season_stats).pts /
-    CASE 
-        WHEN (season_stats[1]::season_stats).pts = 0 THEN 1
-        ELSE (season_stats[1]::season_stats).pts
-    END AS pts_improvement_ratio
-FROM players
-WHERE current_season = 2001
-ORDER BY 2 DESC;
+	
+select 
+	w.player_name, 
+	s.height,
+	s.college,
+	s.country,
+	s.draft_year,
+	s.draft_number,
+	s.draft_round,
+	seasons as season_stats
+--	,( seasons[cardinality(seasons)]).pts
+	,case 
+	when (seasons[cardinality(seasons)]).pts > 20 then 'star'
+	when (seasons[cardinality(seasons)]).pts > 15 then 'good'
+	when (seasons[cardinality(seasons)]).pts > 10 then 'average'
+	else 'bad'
+	end :: scoring_class as scorring_class
+	,w.season - (seasons[cardinality(seasons)]).season as years_since_last_season
+	,w.season as current_season
+	,(seasons[cardinality(seasons)]).season = w.season as is_active
+from windowed w 
+join static s
+on w.player_name = s.player_name;
+
+
+-------------------------------------------------
+-- LAB 2: Converting Datasets into SCDs Type 2 --
+-------------------------------------------------
+-- SCD Table to model the from-to-the-to year changes (we track multiple columns changes)
+CREATE TABLE IF NOT EXISTS players_scd(
+	player_name TEXT,
+	scoring_class scoring_class,
+	is_active BOOLEAN,
+	start_season INTEGER,
+	end_season INTEGER,
+	current_season INTEGER,
+	PRIMARY KEY(player_name, current_season)
+)
+-- We can build 1 SCD from the whole History of Data, then we can use that SCD to cumulative reconstruct the whole History
