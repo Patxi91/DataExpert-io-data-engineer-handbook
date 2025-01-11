@@ -15,7 +15,6 @@ BEGIN
         );
     END IF;
 END $$;
-
 -- Check and create the type scoring_class if it doesn't exist
 DO $$
 BEGIN
@@ -39,7 +38,6 @@ CREATE TABLE players (
 	 is_active BOOLEAN,
      PRIMARY KEY (player_name, current_season)
  );
-
 -- select * from players 
 insert into players 
 with years as (
@@ -109,3 +107,7 @@ select
 from windowed w 
 join static s
 on w.player_name = s.player_name;
+
+/* 
+LAB 2: Converting Datasets into SCDs Type 2
+*/
