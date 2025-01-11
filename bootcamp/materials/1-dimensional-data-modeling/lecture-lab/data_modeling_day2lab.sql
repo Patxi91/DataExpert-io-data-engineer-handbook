@@ -1,7 +1,6 @@
-
-/* 
-Proceeding from LAB 1:
-*/
+-----------------------------
+--  Proceeding from LAB 1  --
+-----------------------------
 -- Check and create the type season_stats if it doesn't exist
 DO $$
 BEGIN
@@ -108,6 +107,12 @@ from windowed w
 join static s
 on w.player_name = s.player_name;
 
-/* 
-LAB 2: Converting Datasets into SCDs Type 2
-*/
+
+-------------------------------------------------
+-- LAB 2: Converting Datasets into SCDs Type 2 --
+-------------------------------------------------
+select player_name, scoring_class, is_active
+from players
+where current_season = 2022
+
+-- SCD Table to model the from-to-the-to year changes (we track multiple columns changes)
