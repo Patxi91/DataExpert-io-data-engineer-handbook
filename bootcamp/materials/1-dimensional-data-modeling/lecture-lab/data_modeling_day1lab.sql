@@ -282,3 +282,55 @@ GROUP BY player_name, streak_identifier, is_active, scoring_class
 ORDER BY player_name, streak_identifier
 
 SELECT * FROM players_scd
+
+-- Another way of doing things
+WITH 
+	last_season_scd AS(
+		SELECT * FROM players_scd
+		WHERE current_season = 2021
+		AND end_season = 2021
+	),
+	historical_scd AS(
+		SELECT * FROM players_scd
+		WHERE current_season = 2021
+		AND end_season < 2021 -- less than
+	),
+	this_season_data AS(
+		SELECT * FROM players
+		WHERE current_season = 2022
+	)
+SELECT 	ts.player_name,
+		ts.scoring_class, ts.is_active,
+		ls.scoring_class, ls.is_active
+FROM this_season_data ts
+	LEFT JOIN last_season_scd ls
+	ON ls.player_name = ts.player_name
+-- Unchanged records: Increase by 1 for the records that don't change
+WITH 
+	last_season_scd AS(
+		SELECT * FROM players_scd
+		WHERE current_season = 2021
+		AND end_season = 2021
+	),
+	historical_scd AS(
+		SELECT * FROM players_scd
+		WHERE current_season = 2021
+		AND end_season < 2021 -- less than
+	),
+	this_season_data AS(
+		SELECT * FROM players
+		WHERE current_season = 2022
+	),
+	unchanged_records AS(
+		SELECT 	ts.player_name,
+				ts.scoring_class, 
+				ts.is_active,
+				ls.start_season,
+				ts.current_season as end_season
+		FROM this_season_data ts
+			LEFT JOIN last_season_scd ls
+			ON ls.player_name = ts.player_name
+		WHERE ts.scoring_class = ls.scoring_class
+		AND ts.is_active = ls.is_active	
+	)
+SELECT * FROM unchanged_records
