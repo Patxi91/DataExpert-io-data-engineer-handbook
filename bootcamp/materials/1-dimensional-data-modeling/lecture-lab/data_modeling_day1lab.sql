@@ -425,6 +425,8 @@ WITH
 	)
 SELECT * FROM historical_scd
 UNION ALL
+SELECT * FROM unchanged_records
+UNION ALL
 SELECT * FROM unnested_changed_records
 UNION ALL
 SELECT * FROM new_records
