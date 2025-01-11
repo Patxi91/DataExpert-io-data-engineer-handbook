@@ -111,6 +111,12 @@ on w.player_name = s.player_name;
 -------------------------------------------------
 -- LAB 2: Converting Datasets into SCDs Type 2 --
 -------------------------------------------------
+select 
+	player_name,
+	scoring_class, 
+	is_active
+from players
+where current_season = 1996
 -- SCD Table to model the from-to-the-to year changes (we track multiple columns changes)
 CREATE TABLE IF NOT EXISTS players_scd(
 	player_name TEXT,
@@ -122,3 +128,33 @@ CREATE TABLE IF NOT EXISTS players_scd(
 	PRIMARY KEY(player_name, current_season)
 )
 -- We can build 1 SCD from the whole History of Data, then we can use that SCD to cumulative reconstruct the whole History
+-- Window Function
+select 
+	player_name,
+	current_season,
+	scoring_class,
+	is_active,
+	LAG(scoring_class, 1) OVER(PARTITION BY player_name ORDER BY current_season) as previous_scoring_class,
+	LAG(is_active, 1) OVER(PARTITION BY player_name ORDER BY current_season) as previous_is_active
+from players
+-- CTE with indictors whether the scoring_class and is_active changed
+WITH with_previous AS(
+	select 
+		player_name,
+		current_season,
+		scoring_class,
+		is_active,
+		LAG(scoring_class, 1) OVER(PARTITION BY player_name ORDER BY current_season) as previous_scoring_class,
+		LAG(is_active, 1) OVER(PARTITION BY player_name ORDER BY current_season) as previous_is_active
+	from players
+)
+SELECT *,
+		CASE
+			WHEN scoring_class <> previous_scoring_class THEN 1 
+			ELSE 0 
+		END AS scoring_class_change_indicator,
+		CASE
+			WHEN is_active <> previous_is_active THEN 1 
+			ELSE 0 
+		END AS is_active_change_indicator
+FROM with_previous
