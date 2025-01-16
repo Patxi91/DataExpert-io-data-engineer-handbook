@@ -26,3 +26,5 @@ Enumerations and Subpartitions pattern usecases:
         - properties: How many years did they play on that team, when did they start, etc.
 - Graph example: [ChicagoBulls]<--Plays_ON-->[MichaelJordan]<--Plays_AGAINST-->[JohnStockton]<--Plays_ON-->[UtahJazz]
 */
+
+-- Vertices andd Edges
