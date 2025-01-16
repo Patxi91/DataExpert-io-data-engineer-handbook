@@ -132,3 +132,15 @@ SELECT
 		)
 FROM teams_deduped
 WHERE row_num = 1;
+
+-- Query Vertices
+SELECT type, COUNT(1)
+FROM vertices
+GROUP BY 1
+/*
+| type    | count |
+|---------|-------|
+| team    | 30    |
+| game    | 9384  |
+| player  | 1496  |
+*/
