@@ -28,3 +28,51 @@ Enumerations and Subpartitions pattern usecases:
 */
 
 -- Vertices and Edges
+DO $$
+BEGIN
+    -- Check and drop vertex_type if it exists
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vertex_type') THEN
+        DROP TYPE vertex_type CASCADE;
+    END IF;
+
+    -- Check and drop edge_type if it exists
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'edge_type') THEN
+        DROP TYPE edge_type CASCADE;
+    END IF;
+END $$;
+
+DROP TABLE IF EXISTS vertices;
+DROP TABLE IF EXISTS edges;
+
+
+-- Objects
+CREATE TYPE vertex_type
+	AS ENUM('player', 'team', 'game');
+
+CREATE TABLE vertices(
+	identifier TEXT,
+	type vertex_type,
+	properties JSON,
+	PRIMARY KEY(identifier, type)
+);
+
+-- Relationships
+CREATE TYPE edge_type AS ENUM(
+	'plays_against',
+	'shares_team',
+	'plays_in',
+	'plays_on');
+
+CREATE TABLE edges(
+    subject_identifier TEXT,
+    subject_type vertex_type,
+    object_identifier TEXT,
+    object_type vertex_type,
+    edge_type edge_type,
+    properties JSON,
+    PRIMARY KEY (	subject_identifier,
+					subject_type,
+					object_identifier,
+					object_type,
+					edge_type)
+);
