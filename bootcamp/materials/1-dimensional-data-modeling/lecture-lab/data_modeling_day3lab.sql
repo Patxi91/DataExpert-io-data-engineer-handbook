@@ -27,4 +27,4 @@ Enumerations and Subpartitions pattern usecases:
 - Graph example: [ChicagoBulls]<--Plays_ON-->[MichaelJordan]<--Plays_AGAINST-->[JohnStockton]<--Plays_ON-->[UtahJazz]
 */
 
--- Vertices andd Edges
+-- Vertices and Edges
