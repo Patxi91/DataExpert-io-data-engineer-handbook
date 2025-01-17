@@ -176,6 +176,7 @@ SELECT
 FROM game_details_deduped
 WHERE row_num = 1;
 
+-- Query aggregated game details
 select
     v.properties->>'player_name',
     max(cast(e.properties->>'pts' as integer))
@@ -186,13 +187,14 @@ and e.subject_type = v.type
 group by 1
 order by 2 desc;
 
+-- plays_against (2 players): We will have both edges (A->B, B->A), so we remove double edges.
 insert into edges
-with deduped as (
+with game_details_deduped as (
     select *, row_number() over (partition by player_id, game_id) as row_num
     from game_details
 ),
     filtered as (
-        select * from deduped
+        select * from game_details_deduped
                  where row_num = 1
     ),
     aggregated as (
@@ -232,16 +234,15 @@ select
     )
 from aggregated;
 
--- we can calculate avg points, points when X plays with Y
--- or points when X plays vs Y, etc.
+-- we can calculate avg points, points when X plays with Y, or points when Y plays vs X
 select
-    v.properties->>'player_name',
+    v.properties->>'player_name' as subject,
     e.object_identifier,
     cast(v.properties->>'number_of_games' as real) /
     case when cast(v.properties->>'total_points' as real) = 0 then 1
-        else cast(v.properties->>'total_points' as real) end,
-    e.properties->>'subject_points',
-    e.properties->>'num_games'
+        else cast(v.properties->>'total_points' as real) end as career_average,
+    e.properties->>'subject_points' as total_points,
+    e.properties->>'num_games' as num_games
 
 from vertices v join edges e
     on v.identifier = e.subject_identifier
