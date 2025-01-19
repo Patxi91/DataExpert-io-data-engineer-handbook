@@ -22,13 +22,16 @@ Reduced fact data modeling:
         - Medium sized volume, 1 row per user per day
     - Reduced fact take this one step further
         - User_id, action_cnt Array, month_start_partition / year_start_partition
+        - Long-Array metrics
+            - First index is for date month_start + zero days
+            - Last index is for date month_start + array_length-1
         - Low volume, 1 row per user per month/year
 
 */
 
------------------------------------
-----           X               ----
------------------------------------
+------------------------------------------------------
+-- Reduced fact data modeling w/ Long-Array metrics --
+------------------------------------------------------
 
 -- week 2 lab 3
 
