@@ -2,7 +2,28 @@
 -----      LAB 3: Reducing fact data       -----
 ------------------------------------------------
 /*
-Notes
+Shuffle should be minimized for parallelism.
+Queries and how parallelizable they are:
+    - Highly parallelizable: SELECT, FROM, WHERE
+    - Medium parallelizable: GROUP BY, JOIN, HAVING
+    - Low parallelizable: ORDER BY
+
+Improve GROUP BY:
+    - Bucket the data (i.e. by user_id) for no need to shuffle
+    - Reduce the data volume as much as possible
+
+
+Reduced fact data modeling:
+    - Fact data often has this schema:
+        - user_id, event_time, action, date_partition
+        - Very High volume, 1 row per event 
+    - Daily aggregate often has this schema:
+        - User_id, action_cnt, date_partition
+        - Medium sized volume, 1 row per user per day
+    - Reduced fact take this one step further
+        - User_id, action_cnt Array, month_start_partition / year_start_partition
+        - Low volume, 1 row per user per month/year
+
 */
 
 -----------------------------------
