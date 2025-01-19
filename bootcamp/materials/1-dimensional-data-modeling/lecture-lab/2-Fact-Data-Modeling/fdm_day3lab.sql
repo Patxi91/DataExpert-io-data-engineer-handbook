@@ -33,9 +33,8 @@ Reduced fact data modeling:
 -- Reduced fact data modeling w/ Long-Array metrics --
 ------------------------------------------------------
 
--- week 2 lab 3
-
-create table array_metrics (
+-- array matrics table
+create table if not exists array_metrics (
     user_id numeric,
     month_start date,
     metric_name text,
@@ -43,6 +42,7 @@ create table array_metrics (
     primary key (user_id, month_start, metric_name)
 );
 
+-- daily aggregate cumulative function
 insert into array_metrics
 with daily_aggregate as (
     select
@@ -50,7 +50,7 @@ with daily_aggregate as (
         date(event_time) as date,
         count(1) as num_site_hits
     from events
-    where date(event_time) = date('2023-01-31')
+    where date(event_time) = date('2023-01-03')
     and user_id is not null
     group by user_id, date(event_time)
 ),
@@ -79,8 +79,18 @@ on conflict (user_id, month_start, metric_name)
 do
     update set metric_array = excluded.metric_array;
 
+-- check cardinality as we build the above
+select cardinality(metric_array), count(1)
+from array_metrics
+group by 1
+/*
+| cardinality | count |
+|-------------|-------|
+| 3           | 138   |
+*/
 
--- we can do N day analysis
+-- Go back from array metrics to daily aggregates
+-- we can do N day analysis: we do dimensional analysis of 3 days
 -- going from monthly array metrics to daily aggregates
 -- but it's very fast as it's the minimal set of data we need
 with agg as (
@@ -89,8 +99,7 @@ with agg as (
         array [
             sum(metric_array[1]),
             sum(metric_array[2]),
-            sum(metric_array[3]),
-            sum(metric_array[4])
+            sum(metric_array[3])
         ] as summed_array
      from array_metrics
      group by metric_name, month_start
